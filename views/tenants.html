@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tenants | BillEasePro</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="btn back">← Back to Dashboard</a>
+    <h1>Manage Tenants</h1>
+
+    <form id="tenantForm">
+      <div class="form-group">
+        <input id="name" name="name" placeholder="Tenant Name" required />
+        <input id="mobile" name="mobile" placeholder="Tenant Mobile" required />
+        <input id="rent" name="rent" type="number" placeholder="Room Rent ₹" required />
+        <input id="owner" name="owner" placeholder="Owner Name" required />
+        <input id="ownerMobile" name="ownerMobile" placeholder="Owner Mobile" required />
+      </div>
+      <button type="submit" class="btn">Save Tenant</button>
+    </form>
+
+    <h2>Your Tenants</h2>
+
+    <!-- 🔍 Search Input -->
+    <input type="text" id="searchTenant" placeholder="Search by name or mobile..." class="search-input" />
+
+    <table id="tenantTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Mobile</th>
+          <th>Rent</th>
+          <th>Owner</th>
+          <th>Owner Mobile</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    let tenants = [];
+    let editingIndex = null;
+
+    function updateForm(index) {
+      const t = tenants[index];
+      document.getElementById('name').value = t.name;
+      document.getElementById('mobile').value = t.mobile;
+      document.getElementById('rent').value = t.roomRent;
+      document.getElementById('owner').value = t.owner;
+      document.getElementById('ownerMobile').value = t.ownerMobile;
+      editingIndex = index;
+    }
+
+    async function loadTenants() {
+      tenants = await (await fetch('/api/tenants')).json();
+      renderTenants(tenants);
+    }
+
+    function renderTenants(data) {
+      const tbody = document.querySelector('#tenantTable tbody');
+      tbody.innerHTML = data.map((t, i) => `
+        <tr>
+          <td>${t.name}</td>
+          <td>${t.mobile}</td>
+          <td>₹${t.roomRent}</td>
+          <td>${t.owner}</td>
+          <td>${t.ownerMobile}</td>
+          <td>
+            <button class="btn small" onclick="updateForm(${i})">Edit</button>
+            <button class="btn small danger" onclick="deleteTenant(${i})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function deleteTenant(i) {
+      await fetch(`/api/tenants/${i}`, { method: 'DELETE' });
+      loadTenants();
+    }
+
+    document.getElementById('tenantForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const data = {
+        name: document.getElementById('name').value.trim(),
+        mobile: document.getElementById('mobile').value.trim(),
+        roomRent: document.getElementById('rent').value.trim(),
+        owner: document.getElementById('owner').value.trim(),
+        ownerMobile: document.getElementById('ownerMobile').value.trim()
+      };
+
+      if (editingIndex !== null) {
+        await fetch(`/api/tenants/${editingIndex}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        await fetch('/api/tenants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+
+      e.target.reset();
+      editingIndex = null;
+      loadTenants();
+    };
+
+    // 🔍 Search Filter Logic
+    document.getElementById('searchTenant').addEventListener('input', function () {
+      const query = this.value.trim().toLowerCase();
+      const filtered = tenants.filter(t =>
+        t.name.toLowerCase().includes(query) ||
+        t.mobile.toLowerCase().includes(query)
+      );
+      renderTenants(filtered);
+    });
+
+    loadTenants();
+  </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard | BillEasePro</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container dashboard">
+    <h1>🏠 BillEasePro Dashboard</h1>
+
+    <div class="summary-cards">
+      <div class="card">
+        <p>Total Tenants</p>
+        <h2 id="tenantCount">0</h2>
+      </div>
+      <div class="card">
+        <p>Total Bills</p>
+        <h2 id="billCount">0</h2>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <a href="/tenants" class="btn">Manage Tenants</a>
+      <a href="/bills" class="btn">Manage Bills</a>
+    </div>
+  </div>
+
+  <script>
+    async function loadCounts() {
+      const tenants = await (await fetch('/api/tenants')).json();
+      const bills = await (await fetch('/api/bills')).json();
+      document.getElementById('tenantCount').textContent = tenants.length;
+      document.getElementById('billCount').textContent = bills.length;
+    }
+
+    loadCounts();
+  </script>
+</body>
+</html>

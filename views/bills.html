@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bills | BillEasePro</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="btn back">← Back to Dashboard</a>
+    <h1>Bills</h1>
+
+    <form id="billForm" class="form-grid">
+      <select id="tenantSelect" required>
+        <option value="">Select Tenant</option>
+      </select>
+      <input id="amount" type="number" placeholder="Rent Amount ₹" required />
+      <input id="monthYear" type="month" required />
+      <select id="mode" required>
+        <option value="">Select Payment Mode</option>
+        <option value="UPI">UPI</option>
+        <option value="Cash">Cash</option>
+      </select>
+      <input id="utr" placeholder="UTR Number (if UPI)" style="display:none" />
+      <input id="through" placeholder="Paid Through (e.g., Tenant → Owner)" required />
+      <button type="submit">Add Bill</button>
+    </form>
+
+    <h2>All Bills</h2>
+
+    <input type="text" id="searchBills" placeholder="Search by name or mobile..." class="search-input" />
+
+    <table id="billTable">
+      <thead>
+        <tr>
+          <th>Tenant</th>
+          <th>Rent</th>
+          <th>Month</th>
+          <th>Mode</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    let tenants = [];
+    let bills = [];
+
+    async function loadTenants() {
+      tenants = await (await fetch('/api/tenants')).json();
+      const select = document.getElementById('tenantSelect');
+      select.innerHTML = '<option value="">Select Tenant</option>'; // reset
+
+      tenants.forEach((t, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `${t.name} (${t.mobile})`;
+        opt.setAttribute('data-rent', t.rent); // enable auto-fill
+        select.appendChild(opt);
+      });
+    }
+
+    async function loadBills() {
+      bills = await (await fetch('/api/bills')).json();
+      renderBills(bills);
+    }
+
+    function renderBills(data) {
+      const tbody = document.querySelector('#billTable tbody');
+      tbody.innerHTML = data.map((b, i) => `
+        <tr>
+          <td>${b.tenantName}</td>
+          <td>₹${b.amount}</td>
+          <td>${b.monthYear || 'N/A'}</td>
+          <td>${b.paymentMode}${b.paymentMode === 'UPI' && b.utr ? ' (UTR: ' + b.utr + ')' : ''}</td>
+          <td>${b.date}</td>
+          <td>
+            <button onclick="deleteBill(${i})">Delete</button>
+            <a class="btn" href="/api/bills/pdf/${i}" target="_blank">Invoice</a>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function deleteBill(i) {
+      await fetch(`/api/bills/${i}`, { method: 'DELETE' });
+      loadBills();
+    }
+
+    document.getElementById('billForm').onsubmit = async e => {
+      e.preventDefault();
+      const i = tenantSelect.value;
+      if (i === '') return alert("Select a tenant");
+
+      const t = tenants[i];
+      const data = {
+        tenantName: t.name,
+        mobile: t.mobile,
+        amount: amount.value,
+        owner: t.owner,
+        ownerMobile: t.ownerMobile,
+        paymentMode: mode.value,
+        utr: utr.value,
+        through: through.value,
+        monthYear: monthYear.value
+      };
+
+      await fetch('/api/bills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      e.target.reset();
+      document.getElementById('utr').style.display = 'none';
+      loadBills();
+    };
+
+    mode.onchange = () => {
+      utr.style.display = mode.value === 'UPI' ? 'block' : 'none';
+    };
+
+    tenantSelect.addEventListener('change', function () {
+      const selectedIndex = this.value;
+      if (selectedIndex !== '') {
+        const selectedOption = this.options[this.selectedIndex];
+        const rent = selectedOption.getAttribute('data-rent');
+        amount.value = rent || '';
+      } else {
+        amount.value = '';
+      }
+    });
+
+    document.getElementById('searchBills').addEventListener('input', function () {
+      const query = this.value.trim().toLowerCase();
+      const filtered = bills.filter(b =>
+        b.tenantName.toLowerCase().includes(query) ||
+        (b.mobile && b.mobile.toLowerCase().includes(query))
+      );
+      renderBills(filtered);
+    });
+
+    loadTenants();
+    loadBills();
+  </script>
+</body>
+</html>
