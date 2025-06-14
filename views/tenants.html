@@ -23,7 +23,6 @@
 
     <h2>Your Tenants</h2>
 
-    <!-- 🔍 Search Input -->
     <input type="text" id="searchTenant" placeholder="Search by name or mobile..." class="search-input" />
 
     <table id="tenantTable">
@@ -56,8 +55,12 @@
     }
 
     async function loadTenants() {
-      tenants = await (await fetch('/api/tenants')).json();
-      renderTenants(tenants);
+      try {
+        tenants = await (await fetch('/api/tenants')).json();
+        renderTenants(tenants);
+      } catch (err) {
+        alert("Failed to load tenants.");
+      }
     }
 
     function renderTenants(data) {
@@ -70,16 +73,20 @@
           <td>${t.owner}</td>
           <td>${t.ownerMobile}</td>
           <td>
-            <button class="btn small" onclick="updateForm(${i})">Edit</button>
-            <button class="btn small danger" onclick="deleteTenant(${i})">Delete</button>
+            <div class="btn-group">
+              <button class="btn small" onclick="updateForm(${i})">Edit</button>
+              <button class="btn small danger" onclick="deleteTenant(${i})">Delete</button>
+            </div>
           </td>
         </tr>
       `).join('');
     }
 
     async function deleteTenant(i) {
-      await fetch(`/api/tenants/${i}`, { method: 'DELETE' });
-      loadTenants();
+      if (confirm("Are you sure you want to delete this tenant?")) {
+        await fetch(`/api/tenants/${i}`, { method: 'DELETE' });
+        loadTenants();
+      }
     }
 
     document.getElementById('tenantForm').onsubmit = async (e) => {
@@ -92,26 +99,20 @@
         ownerMobile: document.getElementById('ownerMobile').value.trim()
       };
 
-      if (editingIndex !== null) {
-        await fetch(`/api/tenants/${editingIndex}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-      } else {
-        await fetch('/api/tenants', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-      }
+      const url = editingIndex !== null ? `/api/tenants/${editingIndex}` : '/api/tenants';
+      const method = editingIndex !== null ? 'PUT' : 'POST';
+
+      await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
 
       e.target.reset();
       editingIndex = null;
       loadTenants();
     };
 
-    // 🔍 Search Filter Logic
     document.getElementById('searchTenant').addEventListener('input', function () {
       const query = this.value.trim().toLowerCase();
       const filtered = tenants.filter(t =>
@@ -125,3 +126,4 @@
   </script>
 </body>
 </html>
+

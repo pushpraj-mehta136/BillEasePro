@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "tenantName": "Sneha Kumari",
+    "mobile": "8340179585",
+    "amount": "2000",
+    "owner": "Sarita Devi",
+    "ownerMobile": "6200363767",
+    "paymentMode": "UPI",
+    "utr": "51648793112",
+    "through": "Pushpraj Mehta",
+    "monthYear": "2024-06",
+    "date": "14/6/2025, 4:14:39 pm",
+    "id": 0
+  }
+]

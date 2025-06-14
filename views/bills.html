@@ -58,7 +58,6 @@
         const opt = document.createElement('option');
         opt.value = i;
         opt.textContent = `${t.name} (${t.mobile})`;
-        opt.setAttribute('data-rent', t.rent); // enable auto-fill
         select.appendChild(opt);
       });
     }
@@ -77,10 +76,13 @@
           <td>${b.monthYear || 'N/A'}</td>
           <td>${b.paymentMode}${b.paymentMode === 'UPI' && b.utr ? ' (UTR: ' + b.utr + ')' : ''}</td>
           <td>${b.date}</td>
-          <td>
-            <button onclick="deleteBill(${i})">Delete</button>
-            <a class="btn" href="/api/bills/pdf/${i}" target="_blank">Invoice</a>
-          </td>
+<td>
+  <div class="btn-group">
+    <button class="btn small danger" onclick="deleteBill(${i})">Delete</button>
+    <a class="btn small" href="/api/bills/pdf/${i}" target="_blank">Invoice</a>
+  </div>
+</td>
+
         </tr>
       `).join('');
     }
@@ -126,9 +128,8 @@
     tenantSelect.addEventListener('change', function () {
       const selectedIndex = this.value;
       if (selectedIndex !== '') {
-        const selectedOption = this.options[this.selectedIndex];
-        const rent = selectedOption.getAttribute('data-rent');
-        amount.value = rent || '';
+        const tenant = tenants[selectedIndex];
+        amount.value = tenant.roomRent || '';
       } else {
         amount.value = '';
       }
